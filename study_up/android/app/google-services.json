@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "79130569188",
+    "project_id": "study-up-uv",
+    "storage_bucket": "study-up-uv.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:79130569188:android:8d1b939d178890e9bcfff1",
+        "android_client_info": {
+          "package_name": "com.example.study_up"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6RNt61Q7z-5ljUdN_Ms7q7PpfQDbTElU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
