@@ -3,8 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/horario_item_entity.dart';
 
 class FirestoreHorarioItemDataSource {
-  final _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   final _collection = 'horarioItems';
+
+  FirestoreHorarioItemDataSource({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<HorarioItemEntity> crear(HorarioItemEntity item) async {
     final doc = await _firestore.collection(_collection).add(item.toMap());

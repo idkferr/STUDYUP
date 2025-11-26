@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:study_up/main.dart';
 import 'package:study_up/presentation/theme/app_theme.dart';
 
@@ -95,6 +96,11 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           supportedLocales: [Locale('es', 'ES')],
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           home: Scaffold(body: Text('Locale Test')),
         ),
       );
@@ -103,7 +109,32 @@ void main() {
       final MaterialApp materialApp = tester.widget(find.byType(MaterialApp));
 
       // Assert
-      expect(materialApp.supportedLocales, contains(const Locale('es', 'ES')));
+      expect(materialApp.supportedLocales, isNotNull);
+      expect(materialApp.supportedLocales.length, 1);
+      expect(materialApp.supportedLocales.first.languageCode, 'es');
+      expect(materialApp.supportedLocales.first.countryCode, 'ES');
+    });
+
+    testWidgets('should have localization delegates configured',
+        (WidgetTester tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Scaffold(body: Text('Delegates Test')),
+        ),
+      );
+
+      // Act
+      final MaterialApp materialApp = tester.widget(find.byType(MaterialApp));
+
+      // Assert: Verifica que la lista existe y tiene los delegates correctos
+      expect(materialApp.localizationsDelegates, isNotNull);
+      expect(materialApp.localizationsDelegates!.length, 3);
     });
 
     testWidgets('should use AppTheme.lightTheme', (WidgetTester tester) async {

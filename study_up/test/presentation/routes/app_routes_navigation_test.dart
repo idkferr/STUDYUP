@@ -6,9 +6,7 @@ import 'package:mockito/mockito.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:study_up/presentation/routes/app_routes.dart';
 import 'package:study_up/presentation/providers/auth_provider.dart';
-import 'package:study_up/presentation/screens/home/home_screen.dart';
 import 'package:study_up/presentation/screens/user/login_screen.dart';
-import 'package:study_up/presentation/screens/user/register_screen.dart';
 
 // Generate mocks with: flutter pub run build_runner build
 @GenerateMocks([FirebaseAuth, User])
