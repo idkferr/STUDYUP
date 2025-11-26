@@ -50,9 +50,14 @@ class _CalificacionFormScreenState
   }
 
   Future<void> _guardarCalificacion() async {
-    if (!_formKey.currentState!.validate()) return;
+    print("Intentando guardar calificación...");
+    if (!_formKey.currentState!.validate()) {
+      print("Validación de formulario fallida");
+      return;
+    }
 
     if (_selectedMateriaId == null) {
+      print("Materia no seleccionada");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Debes seleccionar una materia'),
@@ -63,7 +68,10 @@ class _CalificacionFormScreenState
     }
 
     final user = ref.read(userProvider);
-    if (user == null) return;
+    if (user == null) {
+      print("Usuario no autenticado");
+      return;
+    }
 
     // Validar porcentaje acumulado antes de crear/actualizar
     double acumulado = 0;

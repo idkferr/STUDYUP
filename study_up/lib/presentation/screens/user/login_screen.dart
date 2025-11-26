@@ -228,7 +228,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               hintText: "tu@ejemplo.com",
                               prefixIcon: Icon(Icons.email_rounded),
                             ),
-                            validator: (value) => FormValidators.validateEmailStrong(value),
+                            validator: FormValidators.validateEmail,
                             enabled: !_isLoading,
                           ),
                           const SizedBox(height: 20),

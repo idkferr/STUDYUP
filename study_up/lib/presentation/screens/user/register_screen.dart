@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../application/user_provider.dart';
 import '../../../infrastructure/helpers/firebase_error_helper.dart';
 import '../../../infrastructure/helpers/form_validators.dart';
-import '../home/home_screen.dart';
+
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -12,7 +12,6 @@ class RegisterScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
-
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final emailCtrl = TextEditingController();
@@ -33,6 +32,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Validación de contraseña fuerte
+    final strongPasswordError = FormValidators.validatePasswordStrong(passCtrl.text.trim());
+    if (strongPasswordError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(strongPasswordError),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -43,12 +55,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (!mounted) return;
 
       if (ok) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const HomeScreen(),
-          ),
-        );
+        // Enviar correo de verificación
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null && !user.emailVerified) {
+          await user.sendEmailVerification();
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text('Verifica tu correo'),
+              content: const Text('Se envió un código de verificación a tu correo. Debes verificar tu cuenta antes de poder iniciar sesión.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.pop(context); // Regresa al login
+                  },
+                  child: const Text('Entendido'),
+                ),
+              ],
+            ),
+          );
+        }
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -106,64 +134,63 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo y título
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo y título
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.person_add_rounded,
+                        size: 50,
+                        color: Color(0xFF4CAF50),
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.person_add_rounded,
-                      size: 50,
-                      color: Color(0xFF4CAF50),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Únete a Study-UP',
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Únete a Study-UP',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Comienza tu camino al éxito',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Tarjeta del formulario
-                  Container(
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Comienza tu camino al éxito',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Colors.white.withOpacity(0.9),
+                          ),
                     ),
-                    child: Form(
-                      key: _formKey,
+                    const SizedBox(height: 48),
+                    // Tarjeta del formulario
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -179,7 +206,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 32),
-
                           // Campo de correo
                           TextFormField(
                             controller: emailCtrl,
@@ -193,7 +219,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             enabled: !_isLoading,
                           ),
                           const SizedBox(height: 20),
-
                           // Campo de contraseña
                           TextFormField(
                             controller: passCtrl,
@@ -216,7 +241,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             enabled: !_isLoading,
                           ),
                           const SizedBox(height: 20),
-
                           // Campo de confirmar contraseña
                           TextFormField(
                             controller: confirmPassCtrl,
@@ -237,7 +261,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             enabled: !_isLoading,
                           ),
                           const SizedBox(height: 32),
-
                           // Botón de crear cuenta con gradiente
                           Container(
                             height: 56,
@@ -289,7 +312,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             ),
                           ),
                           const SizedBox(height: 24),
-
                           // Divider
                           Row(
                             children: [
@@ -316,7 +338,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             ],
                           ),
                           const SizedBox(height: 24),
-
                           // Botón de volver al login
                           OutlinedButton(
                             onPressed: _isLoading
@@ -343,9 +364,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
           ),

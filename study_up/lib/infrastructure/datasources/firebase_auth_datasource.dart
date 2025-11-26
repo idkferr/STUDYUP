@@ -19,6 +19,14 @@ class FirebaseAuthDatasource {
         email: email,
         password: password,
       );
+      // Verificar si el correo está verificado
+      if (!creds.user!.emailVerified) {
+        await _auth.signOut();
+        throw FirebaseAuthException(
+          code: 'email-not-verified',
+          message: 'Debes verificar tu correo antes de iniciar sesión.',
+        );
+      }
       return _mapUser(creds.user);
     } catch (e) {
       print("❌ Firebase Auth Login Error: $e");
