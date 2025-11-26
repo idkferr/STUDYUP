@@ -3,10 +3,18 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../domain/entities/user_entity.dart';
 
 class FirebaseAuthDatasource {
-  // Use a getter that directly accesses FirebaseAuth.instance
-  // Firebase should already be initialized in main.dart
-  FirebaseAuth get _auth => FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseAuth _auth;
+  final GoogleSignIn _googleSignIn;
+
+  /// Creates a new FirebaseAuthDatasource.
+  /// 
+  /// [auth] - The FirebaseAuth instance to use. Defaults to FirebaseAuth.instance.
+  /// [googleSignIn] - The GoogleSignIn instance to use. Defaults to a new GoogleSignIn instance.
+  FirebaseAuthDatasource({
+    FirebaseAuth? auth,
+    GoogleSignIn? googleSignIn,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn();
 
   UserEntity? _mapUser(User? user) {
     if (user == null) return null;

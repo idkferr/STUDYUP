@@ -3,8 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/materia_entity.dart';
 
 class FirestoreMateriaDataSource {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   final String _collection = 'materias';
+
+  FirestoreMateriaDataSource([FirebaseFirestore? firestore])
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // Crear nueva materia
   Future<MateriaEntity> crearMateria(MateriaEntity materia) async {
