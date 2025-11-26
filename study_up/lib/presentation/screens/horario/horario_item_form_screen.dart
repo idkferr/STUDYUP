@@ -16,7 +16,8 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 class HorarioItemFormScreen extends ConsumerStatefulWidget {
   final HorarioItemEntity? item;
-  const HorarioItemFormScreen({super.key, this.item});
+  final DateTime? initialDate;
+  const HorarioItemFormScreen({super.key, this.item, this.initialDate});
 
   @override
   ConsumerState<HorarioItemFormScreen> createState() =>
@@ -55,6 +56,16 @@ class _HorarioItemFormScreenState extends ConsumerState<HorarioItemFormScreen> {
       _fin = widget.item!.fin;
       _recordatorio = widget.item!.recordatorioMinutosAntes;
       _selectedColor = widget.item!.color;
+    } else if (widget.initialDate != null) {
+      // Use the initialDate's date but keep current time
+      final now = DateTime.now();
+      _inicio = DateTime(
+        widget.initialDate!.year,
+        widget.initialDate!.month,
+        widget.initialDate!.day,
+        now.hour,
+        now.minute,
+      );
     }
   }
 

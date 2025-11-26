@@ -47,7 +47,7 @@ class HorarioScreen extends ConsumerWidget {
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const HorarioItemFormScreen(),
+                        builder: (_) => HorarioItemFormScreen(),
                       ),
                     ),
                     icon: const Icon(Icons.add),
@@ -109,7 +109,7 @@ class HorarioScreen extends ConsumerWidget {
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const HorarioItemFormScreen(),
+            builder: (_) => HorarioItemFormScreen(),
           ),
         ),
         icon: const Icon(Icons.add),

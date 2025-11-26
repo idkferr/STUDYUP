@@ -1,4 +1,6 @@
 class CalificacionEntity {
+    // Compatibilidad: algunos documentos antiguos pueden tener 'materia' en vez de 'materiaId'
+    String? get materia => materiaId;
   final String? id; // ID de Firestore (null cuando es nueva)
   final String userId; // ID del usuario dueño
   final String materiaId; // ID de la materia (relación con MateriaEntity)
@@ -57,7 +59,7 @@ class CalificacionEntity {
     return CalificacionEntity(
       id: id,
       userId: map['userId'] ?? '',
-      materiaId: map['materiaId'] ?? '',
+      materiaId: map['materiaId'] ?? map['materia'] ?? '',
       nota: (map['nota'] ?? 1.0).toDouble(),
       descripcion: map['descripcion'] ?? '',
       porcentaje: (map['porcentaje'] ?? 0).toDouble(),

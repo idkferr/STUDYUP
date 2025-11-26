@@ -167,49 +167,45 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
 
                   // Grid de cards de funcionalidad
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 3, // cambiado de 2 a 3
-                    mainAxisSpacing: 8, // reducido
-                    crossAxisSpacing: 8, // reducido
-                    childAspectRatio: 0.85, // más compacto
-                    children: [
-                      _buildFeatureCard(
-                        context,
-                        icon: Icons.book_rounded,
-                        title: 'Materias',
-                        subtitle: 'Tus cursos',
-                        color: const Color(0xFF4CAF50),
-                        onTap: () => Navigator.pushNamed(context, '/materias'),
-                      ),
-                      _buildFeatureCard(
-                        context,
-                        icon: Icons.grade_rounded,
-                        title: 'Calificaciones',
-                        subtitle: 'Gestiona tus notas y progreso', // Unificado
-                        color: const Color(0xFF1565C0),
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/calificaciones'),
-                      ),
-                      _buildFeatureCard(
-                        context,
-                        icon: Icons.calendar_today_rounded,
-                        title: 'Horario',
-                        subtitle: 'Tareas y eventos',
-                        color: const Color(0xFF7E57C2),
-                        onTap: () => Navigator.pushNamed(context, '/horario'),
-                      ),
-                      _buildFeatureCard(
-                        context,
-                        icon: Icons.science_rounded,
-                        title: 'Simulador',
-                        subtitle: 'Calcula tu nota',
-                        color: const Color(0xFFE91E63),
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/simulation'),
-                      ),
-                    ],
+                  SizedBox(
+                    height: 320,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _buildFeatureCard(
+                            context,
+                            icon: Icons.book_rounded,
+                            title: 'Materias',
+                            subtitle: 'Tus cursos',
+                            color: const Color(0xFF4CAF50),
+                            onTap: () => Navigator.pushNamed(context, '/materias'),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: _buildFeatureCard(
+                            context,
+                            icon: Icons.calendar_today_rounded,
+                            title: 'Horario',
+                            subtitle: 'Tareas y eventos',
+                            color: const Color(0xFF7E57C2),
+                            onTap: () => Navigator.pushNamed(context, '/horario'),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: _buildFeatureCard(
+                            context,
+                            icon: Icons.science_rounded,
+                            title: 'Simulador',
+                            subtitle: 'Calcula tu nota',
+                            color: const Color(0xFFE91E63),
+                            onTap: () => Navigator.pushNamed(context, '/simulation'),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -229,52 +225,53 @@ class HomeScreen extends ConsumerWidget {
     required VoidCallback onTap,
   }) {
     return Card(
-      elevation: 2,
+      elevation: 4,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(22),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                color.withOpacity(0.1),
-                color.withOpacity(0.05),
+                color.withOpacity(0.12),
+                color.withOpacity(0.06),
               ],
             ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: color,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: color.withOpacity(0.3),
+                      color: color.withOpacity(0.18),
                       blurRadius: 8,
-                      offset: const Offset(0, 4),
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Icon(
                   icon,
                   color: Colors.white,
-                  size: 32,
+                  size: 30,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: color,
                     ),
@@ -283,7 +280,7 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12),
                 textAlign: TextAlign.center,
               ),
             ],

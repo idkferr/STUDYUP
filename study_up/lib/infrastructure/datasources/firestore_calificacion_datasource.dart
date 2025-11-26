@@ -98,13 +98,13 @@ class FirestoreCalificacionDatasource {
   // Obtener calificaciones por materia
   Future<List<CalificacionEntity>> getCalificacionesByMateria(
     String userId,
-    String materia,
+    String materiaId,
   ) async {
     try {
       final query = _firestore
           .collection(_collectionName)
           .where('userId', isEqualTo: userId)
-          .where('materia', isEqualTo: materia)
+          .where('materiaId', isEqualTo: materiaId)
           .orderBy('fecha', descending: true);
       final snapshot = await query.get();
       return snapshot.docs
@@ -113,11 +113,11 @@ class FirestoreCalificacionDatasource {
     } on FirebaseException catch (e) {
       if (e.code == 'failed-precondition') {
         print(
-            '[Calificaciones][INDEX_MISSING] (materia) Crear índice userId+materiaId/fecha. Fallback sin orderBy. Msg: ${e.message}');
+            '[Calificaciones][INDEX_MISSING] (materiaId) Crear índice userId+materiaId/fecha. Fallback sin orderBy. Msg: ${e.message}');
         final snapshot = await _firestore
             .collection(_collectionName)
             .where('userId', isEqualTo: userId)
-            .where('materia', isEqualTo: materia)
+            .where('materiaId', isEqualTo: materiaId)
             .get();
         return snapshot.docs
             .map((doc) => CalificacionEntity.fromMap(doc.data(), doc.id))
