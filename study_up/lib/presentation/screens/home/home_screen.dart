@@ -170,7 +170,7 @@ class HomeScreen extends ConsumerWidget {
                   GridView.count(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 3, // cambiado de 2 a 3
+                    crossAxisCount: 2, // cambiado a 2 para 2x2
                     mainAxisSpacing: 8, // reducido
                     crossAxisSpacing: 8, // reducido
                     childAspectRatio: 0.85, // más compacto

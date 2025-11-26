@@ -16,6 +16,23 @@ class MateriaFormScreen extends ConsumerStatefulWidget {
 }
 
 class _MateriaFormScreenState extends ConsumerState<MateriaFormScreen> {
+    // Días de la semana en español
+    final List<String> _diasSemana = [
+      'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'
+    ];
+
+    // Estado de selección de días y horas
+    late Map<String, bool> _diasSeleccionados;
+    late Map<String, TimeOfDay?> _horaInicioPorDia;
+    late Map<String, TimeOfDay?> _horaFinPorDia;
+
+    @override
+    void initState() {
+      super.initState();
+      _diasSeleccionados = {for (var d in _diasSemana) d: false};
+      _horaInicioPorDia = {for (var d in _diasSemana) d: null};
+      _horaFinPorDia = {for (var d in _diasSemana) d: null};
+    }
   final _formKey = GlobalKey<FormState>();
   final _codigoController = TextEditingController();
   final _nombreController = TextEditingController();
@@ -335,87 +352,62 @@ class _MateriaFormScreenState extends ConsumerState<MateriaFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Horario
-              TextFormField(
-                controller: _horarioController,
-                decoration: InputDecoration(
-                  labelText: 'Horario (Opcional)',
-                  hintText: 'Ej: Lun 09:00-10:30, Mie 11:00-12:30',
-                  prefixIcon: const Icon(Icons.schedule),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 16),
-
-              // Horario visual opcional
-              SwitchListTile(
-                title: const Text('Usar selector visual de horario'),
-                value: _usarSelectorVisual,
-                onChanged: (v) => setState(() => _usarSelectorVisual = v),
-              ),
-              if (_usarSelectorVisual) ...[
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    final fecha = await showDatePicker(
-                      context: context,
-                      firstDate: DateTime(2023),
-                      lastDate: DateTime(2030),
-                      initialDate: _fechaInicio ?? DateTime.now(),
-                      locale: const Locale('es', 'ES'),
-                    );
-                    if (fecha != null) {
-                      final hora = await showTimePicker(
-                        context: context,
-                        initialTime: _horaInicio ?? TimeOfDay.now(),
-                      );
-                      if (hora != null) {
-                        setState(() {
-                          _fechaInicio = fecha;
-                          _horaInicio = hora;
-                        });
-                      }
-                    }
-                  },
-                  icon: const Icon(Icons.event),
-                  label: Text(_fechaInicio == null
-                      ? 'Seleccionar fecha y hora'
-                      : 'Fecha: ${_fechaInicio!.day}/${_fechaInicio!.month}/${_fechaInicio!.year} ${_horaInicio?.format(context) ?? ''}'),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Text('Duración:',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
-                    DropdownButton<Duration>(
-                      value: _duracion,
-                      onChanged: (d) => setState(() => _duracion = d!),
-                      items: const [
-                        Duration(minutes: 30),
-                        Duration(hours: 1),
-                        Duration(hours: 2),
-                      ]
-                          .map((d) => DropdownMenuItem(
-                                value: d,
-                                child: Text(d.inMinutes < 60
-                                    ? '${d.inMinutes} min'
-                                    : '${d.inHours} h'),
-                              ))
-                          .toList(),
+              // Selección de días y horas
+              Text('Horario (opcional)', style: Theme.of(context).textTheme.titleMedium),
+              ..._diasSeleccionados.keys.map((dia) => Row(
+                children: [
+                  Checkbox(
+                    value: _diasSeleccionados[dia],
+                    onChanged: (val) {
+                      setState(() {
+                        _diasSeleccionados[dia] = val ?? false;
+                        if (val == true && _horaInicioPorDia[dia] == null) {
+                          _horaInicioPorDia[dia] = const TimeOfDay(hour: 8, minute: 0);
+                          _horaFinPorDia[dia] = const TimeOfDay(hour: 9, minute: 0);
+                        }
+                      });
+                    },
+                  ),
+                  Text(dia),
+                  if (_diasSeleccionados[dia] == true) ...[
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: _horaInicioPorDia[dia] ?? const TimeOfDay(hour: 8, minute: 0),
+                        );
+                        if (picked != null) {
+                          setState(() => _horaInicioPorDia[dia] = picked);
+                        }
+                      },
+                      child: Text('Inicio: ${_horaInicioPorDia[dia]?.format(context) ?? '--:--'}'),
                     ),
-                  ],
-                ),
-                CheckboxListTile(
-                  value: _agregarAlHorario,
-                  onChanged: (v) =>
-                      setState(() => _agregarAlHorario = v ?? false),
-                  title:
-                      const Text('Agregar evento al Horario automáticamente'),
-                  subtitle: const Text('Crea un evento asociado a la materia'),
-                ),
-              ],
+                    TextButton(
+                      onPressed: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: _horaFinPorDia[dia] ?? const TimeOfDay(hour: 9, minute: 0),
+                        );
+                        if (picked != null) {
+                          setState(() => _horaFinPorDia[dia] = picked);
+                        }
+                      },
+                      child: Text('Fin: ${_horaFinPorDia[dia]?.format(context) ?? '--:--'}'),
+                    ),
+                  ]
+                ],
+              )),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Checkbox(
+                    value: _agregarAlHorario,
+                    onChanged: (val) => setState(() => _agregarAlHorario = val ?? false),
+                  ),
+                  const Text('Agregar al calendario'),
+                ],
+              ),
               const SizedBox(height: 16),
 
               // Selector de color
