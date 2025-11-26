@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../../widgets/calendario_profesional.dart';
+import '../../widgets/calendario_horario.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../../../application/user_provider.dart';
 import '../../../application/horario_items_provider.dart';
@@ -10,11 +10,18 @@ import '../../../domain/entities/horario_item_entity.dart';
 import '../../theme/app_theme.dart';
 import 'horario_item_form_screen.dart';
 
-class HorarioScreen extends ConsumerWidget {
+class HorarioScreen extends ConsumerStatefulWidget {
   const HorarioScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HorarioScreen> createState() => _HorarioScreenState();
+}
+
+class _HorarioScreenState extends ConsumerState<HorarioScreen> {
+  DateTime? _selectedDayForCreate;
+
+  @override
+  Widget build(BuildContext context) {
     initializeDateFormatting('es_ES', null);
     final user = ref.watch(userProvider);
     if (user == null) {
@@ -54,7 +61,7 @@ class HorarioScreen extends ConsumerWidget {
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const HorarioItemFormScreen(),
+                        builder: (_) => HorarioItemFormScreen(initialDate: _selectedDayForCreate),
                       ),
                     ),
                     icon: const Icon(Icons.add, color: AppTheme.primaryBlue),
@@ -73,12 +80,11 @@ class HorarioScreen extends ConsumerWidget {
           }
 
           // Mapear eventos por día para el calendario profesional
-          final eventosPorDia = <DateTime, List<String>>{};
+          // Mapear eventos por día con los objetos completos
+          final eventosPorDia = <DateTime, List<HorarioItemEntity>>{};
           for (final item in items) {
             final dia = DateTime(item.inicio.year, item.inicio.month, item.inicio.day);
-            final descripcion = '${item.titulo} • ${item.tipo} • ${item.inicio.hour.toString().padLeft(2, '0')}:${item.inicio.minute.toString().padLeft(2, '0')}'
-              + (item.fin != null ? ' - ${item.fin?.hour.toString().padLeft(2, '0')}:${item.fin?.minute.toString().padLeft(2, '0')}' : '');
-            eventosPorDia.putIfAbsent(dia, () => []).add(descripcion);
+            eventosPorDia.putIfAbsent(dia, () => []).add(item);
           }
 
           return Container(
@@ -94,8 +100,17 @@ class HorarioScreen extends ConsumerWidget {
               ],
             ),
             margin: const EdgeInsets.all(16),
-            child: CalendarioProfesional(
+            child: CalendarioHorario(
               eventos: eventosPorDia,
+              onToggleCompletado: (item, value) async {
+                final notifier = ref.read(horarioItemsNotifierProvider(user.uid).notifier);
+                await notifier.actualizar(item.copyWith(completado: value));
+              },
+              onEliminar: (item) async {
+                final notifier = ref.read(horarioItemsNotifierProvider(user.uid).notifier);
+                await notifier.eliminar(item.id!);
+              },
+              onDiaSeleccionado: (d) => setState(() => _selectedDayForCreate = d),
               primaryColor: AppTheme.primaryPurple,
               accentColor: AppTheme.primaryBlue,
             ),
@@ -106,7 +121,7 @@ class HorarioScreen extends ConsumerWidget {
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => const HorarioItemFormScreen(),
+            builder: (_) => HorarioItemFormScreen(initialDate: _selectedDayForCreate),
           ),
         ),
         icon: const Icon(Icons.add),

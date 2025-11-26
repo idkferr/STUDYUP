@@ -53,8 +53,9 @@ class MateriasNotifier extends StateNotifier<AsyncValue<List<MateriaEntity>>> {
     super.dispose();
   }
 
-  Future<void> crearMateria(MateriaEntity materia) async {
-    await _repository.crearMateria(materia);
+  Future<MateriaEntity> crearMateria(MateriaEntity materia) async {
+    final created = await _repository.crearMateria(materia);
+    return created;
   }
 
   Future<void> actualizarMateria(MateriaEntity materia) async {

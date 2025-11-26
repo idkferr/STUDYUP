@@ -44,8 +44,14 @@ class StudyUpApp extends StatelessWidget {
       initialRoute: AppRoutes.initialRoute,
       routes: AppRoutes.routes,
       theme: AppTheme.lightTheme,
-      supportedLocales: const [Locale('es', 'ES')],
-      localizationsDelegates: [
+      // Soporte completo para español y fallback a inglés
+      supportedLocales: const [
+        Locale('es', 'ES'),
+        Locale('es'),
+        Locale('en', 'US'),
+        Locale('en'),
+      ],
+      localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,

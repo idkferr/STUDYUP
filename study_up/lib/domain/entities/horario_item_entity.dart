@@ -12,6 +12,7 @@ class HorarioItemEntity {
   final int? recordatorioMinutosAntes; // null = sin recordatorio
   final String? descripcion;
   final Color color;
+  final bool completado;
 
   HorarioItemEntity({
     this.id,
@@ -24,6 +25,7 @@ class HorarioItemEntity {
     this.recordatorioMinutosAntes,
     this.descripcion,
     required this.color,
+    this.completado = false,
   });
 
   HorarioItemEntity copyWith({
@@ -37,6 +39,7 @@ class HorarioItemEntity {
     int? recordatorioMinutosAntes,
     String? descripcion,
     Color? color,
+    bool? completado,
   }) {
     return HorarioItemEntity(
       id: id ?? this.id,
@@ -50,6 +53,7 @@ class HorarioItemEntity {
           recordatorioMinutosAntes ?? this.recordatorioMinutosAntes,
       descripcion: descripcion ?? this.descripcion,
       color: color ?? this.color,
+      completado: completado ?? this.completado,
     );
   }
 
@@ -64,6 +68,7 @@ class HorarioItemEntity {
       'recordatorioMinutosAntes': recordatorioMinutosAntes,
       'descripcion': descripcion,
       'color': color.value,
+      'completado': completado,
     };
   }
 
@@ -79,6 +84,7 @@ class HorarioItemEntity {
       recordatorioMinutosAntes: map['recordatorioMinutosAntes'],
       descripcion: map['descripcion'],
       color: Color(map['color'] ?? 0xFF7E57C2),
+      completado: map['completado'] ?? false,
     );
   }
 }

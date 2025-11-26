@@ -239,21 +239,24 @@ class _CalificacionesScreenState extends ConsumerState<CalificacionesScreen> {
                   // Filtrar calificaciones según semestre y materia seleccionados
                   final materiaSeleccionada =
                       ref.watch(materiaSeleccionadaProvider);
-                  final materiasIds = semestreSeleccionado == null
+
+                    // Compatibilidad: aceptar calificaciones con campo 'materia' o 'materiaId'
+                    final materiasIds = semestreSeleccionado == null
                       ? todasMaterias.map((m) => m.id).toSet()
                       : todasMaterias
-                          .where((m) => m.semestre == semestreSeleccionado)
-                          .map((m) => m.id)
-                          .toSet();
+                        .where((m) => m.semestre == semestreSeleccionado)
+                        .map((m) => m.id)
+                        .toSet();
 
-                  final calificaciones = todasCalificaciones
-                      .where((c) => materiasIds.contains(c.materiaId))
+                    final calificaciones = todasCalificaciones
+                      .where((c) => materiasIds.contains(c.materiaId) || materiasIds.contains(c.materia))
                       .where((c) =>
-                          materiaSeleccionada == null ||
-                          c.materiaId == materiaSeleccionada)
+                        materiaSeleccionada == null ||
+                        c.materiaId == materiaSeleccionada ||
+                        (c.materia != null && c.materia == materiaSeleccionada))
                       .toList();
 
-                  // Mapa id -> materia para obtener nombre
+                  // Agrupar calificaciones por materia
                   final materiaPorId = {
                     for (final m in todasMaterias)
                       if (m.id != null) m.id!: m
@@ -305,18 +308,19 @@ class _CalificacionesScreenState extends ConsumerState<CalificacionesScreen> {
                     );
                   }
 
-                  // Calcular estadísticas localmente (solo del filtro)
+                  // Agrupar por materiaId
+                  final calificacionesPorMateria = <String, List<dynamic>>{};
+                  for (final c in calificaciones) {
+                    calificacionesPorMateria.putIfAbsent(c.materiaId, () => []).add(c);
+                  }
+
+                  // Calcular estadísticas globales
                   final totalNotas = calificaciones.length;
                   final promedio = calificaciones.isEmpty
                       ? 0.0
-                      : calificaciones
-                              .map((c) => c.nota)
-                              .reduce((a, b) => a + b) /
-                          totalNotas;
-                  final aprobadas =
-                      calificaciones.where((c) => c.aprobado).length;
+                      : calificaciones.map((c) => c.nota).reduce((a, b) => a + b) / totalNotas;
+                  final aprobadas = calificaciones.where((c) => c.aprobado).length;
                   final reprobadas = totalNotas - aprobadas;
-
                   final stats = {
                     'promedio': promedio,
                     'total': totalNotas,
@@ -327,29 +331,97 @@ class _CalificacionesScreenState extends ConsumerState<CalificacionesScreen> {
                   return SliverList(
                     delegate: SliverChildListDelegate([
                       const SizedBox(height: 16),
-                      // Card de estadísticas
                       _buildStatsCard(context, stats),
                       const SizedBox(height: 16),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
-                          'Todas las calificaciones',
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                          'Calificaciones por materia',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // Lista de calificaciones
-                      ...calificaciones.map((calificacion) {
-                        final materiaNombre =
-                            materiaPorId[calificacion.materiaId]?.nombre ??
-                                'Materia';
-                        return _buildCalificacionCard(
-                            context, calificacion, materiaNombre);
+                      ...calificacionesPorMateria.entries.map((entry) {
+                        final materia = materiaPorId[entry.key];
+                        final califs = List.from(entry.value);
+                        // Ordenar por porcentaje descendente, luego fecha
+                        califs.sort((a, b) {
+                          final cmp = b.porcentaje.compareTo(a.porcentaje);
+                          if (cmp != 0) return cmp;
+                          return b.fecha.compareTo(a.fecha);
+                        });
+                        final notaFinal = califs.first;
+                        final parciales = califs.length > 1 ? califs.sublist(1) : [];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          child: Card(
+                            elevation: 3,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: BoxDecoration(
+                                          color: materia?.color ?? Colors.grey,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        materia?.nombre ?? 'Materia',
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Nota final destacada
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                                    decoration: BoxDecoration(
+                                      gradient: AppTheme.successGradient,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.star_rounded, color: Colors.amber, size: 24),
+                                            const SizedBox(width: 8),
+                                            Text('Nota Final', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                          ],
+                                        ),
+                                        Text(
+                                          notaFinal.nota.toStringAsFixed(1),
+                                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  if (parciales.isNotEmpty) ...[
+                                    Text('Notas parciales:', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 6),
+                                    ...parciales.map((c) => _buildCalificacionCard(context, c, materia?.nombre ?? 'Materia')),
+                                  ]
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
                       }),
-                      const SizedBox(height: 80), // Espacio para el FAB
+                      const SizedBox(height: 80),
                     ]),
                   );
                 },

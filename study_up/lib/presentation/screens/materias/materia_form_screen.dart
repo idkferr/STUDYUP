@@ -45,10 +45,7 @@ class _MateriaFormScreenState extends ConsumerState<MateriaFormScreen> {
   bool _isLoading = false;
   MateriaEntity? _materiaExistente;
 
-  DateTime? _fechaInicio;
-  TimeOfDay? _horaInicio;
-  Duration _duracion = const Duration(hours: 1);
-  bool _usarSelectorVisual = false;
+  // Eliminados campos no usados: _fechaInicio, _horaInicio, _duracion, _usarSelectorVisual
   bool _agregarAlHorario = false;
 
   final List<Color> _coloresDisponibles = [
@@ -144,41 +141,64 @@ class _MateriaFormScreenState extends ConsumerState<MateriaFormScreen> {
         horario: horarioText.isEmpty ? null : horarioText,
       );
 
+      // Save or update the materia and capture the saved entity (with ID)
+      late final MateriaEntity savedMateria;
       if (_materiaExistente == null) {
-        await notifier.crearMateria(materia);
+        savedMateria = await notifier.crearMateria(materia);
       } else {
         await notifier.actualizarMateria(materia);
+        savedMateria = materia;
       }
 
-      if (_agregarAlHorario &&
-          _usarSelectorVisual &&
-          _fechaInicio != null &&
-          _horaInicio != null) {
-        // Construir DateTime inicio y fin
-        final inicio = DateTime(
-          _fechaInicio!.year,
-          _fechaInicio!.month,
-          _fechaInicio!.day,
-          _horaInicio!.hour,
-          _horaInicio!.minute,
-        );
-        final fin = inicio.add(_duracion);
-        // Crear evento rápido
-        // TODO: Reemplazar color directo por materia.color tras persistir
-        final evento = HorarioItemEntity(
-          userId: user.uid,
-          materiaId: materia.id, // se asignará luego si es nueva
-          titulo: materia.nombre,
-          tipo: 'clase',
-          inicio: inicio,
-          fin: fin,
-          color: materia.color,
-        );
-        try {
-          await ref
-              .read(horarioItemsNotifierProvider(user.uid).notifier)
-              .crear(evento);
-        } catch (_) {}
+      // Si el usuario seleccionó agregar al calendario, crear eventos
+      if (_agregarAlHorario) {
+        // Crear eventos para cada día seleccionado con su hora de inicio y fin
+        final now = DateTime.now();
+        for (final dia in _diasSemana) {
+          if (_diasSeleccionados[dia] == true &&
+              _horaInicioPorDia[dia] != null &&
+              _horaFinPorDia[dia] != null) {
+            // Calcular el próximo día de la semana correspondiente
+            final diaIndex = _diasSemana.indexOf(dia); // 0=Lunes ... 6=Domingo
+            int daysToAdd = (diaIndex - (now.weekday - 1));
+            if (daysToAdd < 0) daysToAdd += 7;
+            final fecha = now.add(Duration(days: daysToAdd));
+            final inicio = DateTime(
+              fecha.year,
+              fecha.month,
+              fecha.day,
+              _horaInicioPorDia[dia]!.hour,
+              _horaInicioPorDia[dia]!.minute,
+            );
+            final fin = DateTime(
+              fecha.year,
+              fecha.month,
+              fecha.day,
+              _horaFinPorDia[dia]!.hour,
+              _horaFinPorDia[dia]!.minute,
+            );
+            final materiaIdForEvent = savedMateria.id ?? materia.id;
+            final evento = HorarioItemEntity(
+              userId: user.uid,
+              materiaId: materiaIdForEvent,
+              titulo: savedMateria.nombre,
+              tipo: 'clase',
+              inicio: inicio,
+              fin: fin,
+              color: savedMateria.color,
+            );
+            try {
+              // Debug log to help trace creation
+              print('[Materias] Creando evento desde horario parser para materiaId=$materiaIdForEvent titulo=${evento.titulo} inicio=${evento.inicio}');
+                await ref
+                  .read(horarioItemsNotifierProvider(user.uid).notifier)
+                  .crear(evento);
+                print('[Materias] Evento creado (notifier.crear)');
+            } catch (e) {
+              print('[Materias][ERROR] al crear evento: $e');
+            }
+          }
+        }
       }
 
       // Preguntar si desea agregar como evento al horario (solo si definió horario)
@@ -200,9 +220,55 @@ class _MateriaFormScreenState extends ConsumerState<MateriaFormScreen> {
           ),
         );
         if (agregar == true) {
-          // TODO: Abrir pantalla creadora de eventos (placeholder)
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Función de creación de eventos pendiente')));
+          // Parsear `materia.horario` y crear eventos automáticos
+          if (materia.horario != null && materia.horario!.trim().isNotEmpty) {
+            final horarioText = materia.horario!.trim();
+            // Ejemplo esperado: "Lun 09:00-10:30, Mie 11:00-12:30"
+            final parts = horarioText.split(',');
+            final Map<String, int> diaMap = {
+              'LUN': 1,
+              'MAR': 2,
+              'MIE': 3,
+              'MIÉ': 3,
+              'JUE': 4,
+              'VIE': 5,
+              'SAB': 6,
+              'DOM': 7,
+            };
+            final now = DateTime.now();
+            for (final part in parts) {
+              final p = part.trim();
+              final m = RegExp(r'^([A-Za-zÁÉÍÓÚáéíóú]{3})\s+(\d{2}:\d{2})-(\d{2}:\d{2})$').firstMatch(p);
+              if (m != null) {
+                final dayAbbr = m.group(1)!.toUpperCase();
+                final start = m.group(2)!;
+                final end = m.group(3)!;
+                final weekday = diaMap[dayAbbr.replaceAll('É', 'É')];
+                if (weekday == null) continue;
+                final startParts = start.split(':').map((s) => int.parse(s)).toList();
+                final endParts = end.split(':').map((s) => int.parse(s)).toList();
+                int daysToAdd = (weekday - now.weekday);
+                if (daysToAdd < 0) daysToAdd += 7;
+                final fecha = now.add(Duration(days: daysToAdd));
+                final inicio = DateTime(fecha.year, fecha.month, fecha.day, startParts[0], startParts[1]);
+                final fin = DateTime(fecha.year, fecha.month, fecha.day, endParts[0], endParts[1]);
+                final evento = HorarioItemEntity(
+                  userId: user.uid,
+                  materiaId: savedMateria.id,
+                  titulo: savedMateria.nombre,
+                  tipo: 'clase',
+                  inicio: inicio,
+                  fin: fin,
+                  color: savedMateria.color,
+                );
+                try {
+                  await ref
+                      .read(horarioItemsNotifierProvider(user.uid).notifier)
+                      .crear(evento);
+                } catch (_) {}
+              }
+            }
+          }
         }
       }
 
@@ -352,52 +418,89 @@ class _MateriaFormScreenState extends ConsumerState<MateriaFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Selección de días y horas
+              // Selección de días y horas (diseño horizontal, redondo e interactivo)
               Text('Horario (opcional)', style: Theme.of(context).textTheme.titleMedium),
-              ..._diasSeleccionados.keys.map((dia) => Row(
-                children: [
-                  Checkbox(
-                    value: _diasSeleccionados[dia],
-                    onChanged: (val) {
-                      setState(() {
-                        _diasSeleccionados[dia] = val ?? false;
-                        if (val == true && _horaInicioPorDia[dia] == null) {
-                          _horaInicioPorDia[dia] = const TimeOfDay(hour: 8, minute: 0);
-                          _horaFinPorDia[dia] = const TimeOfDay(hour: 9, minute: 0);
-                        }
-                      });
-                    },
-                  ),
-                  Text(dia),
-                  if (_diasSeleccionados[dia] == true) ...[
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: _horaInicioPorDia[dia] ?? const TimeOfDay(hour: 8, minute: 0),
-                        );
-                        if (picked != null) {
-                          setState(() => _horaInicioPorDia[dia] = picked);
-                        }
-                      },
-                      child: Text('Inicio: ${_horaInicioPorDia[dia]?.format(context) ?? '--:--'}'),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: _horaFinPorDia[dia] ?? const TimeOfDay(hour: 9, minute: 0),
-                        );
-                        if (picked != null) {
-                          setState(() => _horaFinPorDia[dia] = picked);
-                        }
-                      },
-                      child: Text('Fin: ${_horaFinPorDia[dia]?.format(context) ?? '--:--'}'),
-                    ),
-                  ]
-                ],
-              )),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _diasSemana.map((dia) {
+                    final seleccionado = _diasSeleccionados[dia]!;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Column(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _diasSeleccionados[dia] = !seleccionado;
+                                if ((_diasSeleccionados[dia] ?? false) && _horaInicioPorDia[dia] == null) {
+                                  _horaInicioPorDia[dia] = const TimeOfDay(hour: 8, minute: 0);
+                                  _horaFinPorDia[dia] = const TimeOfDay(hour: 9, minute: 0);
+                                }
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: seleccionado ? Theme.of(context).colorScheme.primary : Colors.grey[200],
+                                shape: BoxShape.circle,
+                                boxShadow: seleccionado
+                                    ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), blurRadius: 8)]
+                                    : [],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  dia.substring(0, 3),
+                                  style: TextStyle(
+                                    color: seleccionado ? Colors.white : Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (seleccionado) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextButton(
+                                  onPressed: () async {
+                                    final picked = await showTimePicker(
+                                      context: context,
+                                      initialTime: _horaInicioPorDia[dia] ?? const TimeOfDay(hour: 8, minute: 0),
+                                    );
+                                    if (picked != null) {
+                                      setState(() => _horaInicioPorDia[dia] = picked);
+                                    }
+                                  },
+                                  child: Text('Inicio: ${_horaInicioPorDia[dia]?.format(context) ?? '--:--'}'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    final picked = await showTimePicker(
+                                      context: context,
+                                      initialTime: _horaFinPorDia[dia] ?? const TimeOfDay(hour: 9, minute: 0),
+                                    );
+                                    if (picked != null) {
+                                      setState(() => _horaFinPorDia[dia] = picked);
+                                    }
+                                  },
+                                  child: Text('Fin: ${_horaFinPorDia[dia]?.format(context) ?? '--:--'}'),
+                                ),
+                              ],
+                            ),
+                          ]
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
               const SizedBox(height: 16),
               Row(
                 children: [
