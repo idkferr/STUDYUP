@@ -3,9 +3,11 @@ import '../domain/entities/user_entity.dart';
 import '../domain/repositories/auth_repository.dart';
 import '../infrastructure/datasources/firebase_auth_datasource.dart';
 import '../infrastructure/repositories/auth_repository_impl.dart';
+import '../presentation/providers/auth_provider.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepositoryImpl(FirebaseAuthDatasource());
+  final firebaseAuth = ref.watch(firebaseAuthProvider);
+  return AuthRepositoryImpl(FirebaseAuthDatasource(auth: firebaseAuth));
 });
 
 final userProvider = StateNotifierProvider<UserNotifier, UserEntity?>((ref) {
