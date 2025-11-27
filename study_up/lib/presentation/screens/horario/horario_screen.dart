@@ -1,7 +1,6 @@
 // filepath: lib/presentation/screens/horario/horario_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:table_calendar/table_calendar.dart';
 import '../../widgets/calendario_horario.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../../../application/user_provider.dart';
@@ -61,7 +60,8 @@ class _HorarioScreenState extends ConsumerState<HorarioScreen> {
                     onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => HorarioItemFormScreen(initialDate: _selectedDayForCreate),
+                        builder: (_) => HorarioItemFormScreen(
+                            initialDate: _selectedDayForCreate),
                       ),
                     ),
                     icon: const Icon(Icons.add, color: AppTheme.primaryBlue),
@@ -83,7 +83,8 @@ class _HorarioScreenState extends ConsumerState<HorarioScreen> {
           // Mapear eventos por día con los objetos completos
           final eventosPorDia = <DateTime, List<HorarioItemEntity>>{};
           for (final item in items) {
-            final dia = DateTime(item.inicio.year, item.inicio.month, item.inicio.day);
+            final dia =
+                DateTime(item.inicio.year, item.inicio.month, item.inicio.day);
             eventosPorDia.putIfAbsent(dia, () => []).add(item);
           }
 
@@ -103,14 +104,17 @@ class _HorarioScreenState extends ConsumerState<HorarioScreen> {
             child: CalendarioHorario(
               eventos: eventosPorDia,
               onToggleCompletado: (item, value) async {
-                final notifier = ref.read(horarioItemsNotifierProvider(user.uid).notifier);
+                final notifier =
+                    ref.read(horarioItemsNotifierProvider(user.uid).notifier);
                 await notifier.actualizar(item.copyWith(completado: value));
               },
               onEliminar: (item) async {
-                final notifier = ref.read(horarioItemsNotifierProvider(user.uid).notifier);
+                final notifier =
+                    ref.read(horarioItemsNotifierProvider(user.uid).notifier);
                 await notifier.eliminar(item.id!);
               },
-              onDiaSeleccionado: (d) => setState(() => _selectedDayForCreate = d),
+              onDiaSeleccionado: (d) =>
+                  setState(() => _selectedDayForCreate = d),
               primaryColor: AppTheme.primaryPurple,
               accentColor: AppTheme.primaryBlue,
             ),
@@ -121,7 +125,8 @@ class _HorarioScreenState extends ConsumerState<HorarioScreen> {
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => HorarioItemFormScreen(initialDate: _selectedDayForCreate),
+            builder: (_) =>
+                HorarioItemFormScreen(initialDate: _selectedDayForCreate),
           ),
         ),
         icon: const Icon(Icons.add),

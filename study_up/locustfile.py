@@ -1,7 +1,7 @@
 import os
 import time
 from datetime import datetime
-from locust import HttpUser, task, between, events
+from locust import User, task, between, events
 import firebase_admin
 from firebase_admin import firestore, auth
 import random
@@ -11,11 +11,10 @@ from google.cloud.firestore import SERVER_TIMESTAMP
 # ========================================
 # 🔧 CONFIGURACIÓN DEL EMULADOR DE FIREBASE
 # ========================================
-# IMPORTANTE: Estas variables DEBEN configurarse ANTES de inicializar Firebase
-os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8081"
 os.environ["FIREBASE_AUTH_EMULATOR_HOST"] = "localhost:9099"
+os.environ["GCLOUD_PROJECT"] = "demo-proyecto-flutter"
 
-# Variable global para la app de Firebase
 firebase_app = None
 db = None
 
@@ -29,30 +28,50 @@ def on_locust_init(environment, **kwargs):
     global firebase_app, db
 
     try:
-        # Inicializar Firebase con credenciales dummy para emulador
+        # ⭐ Para emuladores NO se necesitan credenciales
+        # Solo especifica el projectId
         firebase_app = firebase_admin.initialize_app(
-            options={
-                "projectId": "demo-proyecto-flutter",
-            }
+            options={"projectId": "demo-proyecto-flutter"}
         )
         db = firestore.client()
         print("✅ Firebase Admin SDK inicializado correctamente con emuladores")
         print(f"   📍 Firestore: {os.environ.get('FIRESTORE_EMULATOR_HOST')}")
         print(f"   📍 Auth: {os.environ.get('FIREBASE_AUTH_EMULATOR_HOST')}")
+        print(f"   📍 Firestore client: {db}")  # ⭐ Debug: verificar que db existe
     except Exception as e:
         print(f"❌ Error al inicializar Firebase: {e}")
+        import traceback
+
+        traceback.print_exc()
+
+
+# ========================================
+# 🔧 FUNCIÓN HELPER PARA OBTENER DB
+# ========================================
+def get_db():
+    """
+    Obtiene el cliente de Firestore de manera segura.
+    Si db es None, intenta obtenerlo del app existente.
+    """
+    global db
+    if db is None:
+        try:
+            db = firestore.client()
+            print("⚠️ Firestore client reinicializado en thread")
+        except Exception as e:
+            print(f"❌ Error al obtener Firestore client: {e}")
+    return db
 
 
 # ========================================
 # 🧪 CLASE DE USUARIO PARA PRUEBAS DE CARGA
 # ========================================
-class StudyUpUser(HttpUser):
+class StudyUpUser(User):
     """
     Simula un usuario de la aplicación Study-UP.
     Cada usuario crea una cuenta, agrega materias y calificaciones.
     """
 
-    # Tiempo de espera entre tareas (1-3 segundos)
     wait_time = between(1, 3)
 
     def __init__(self, *args, **kwargs):
@@ -66,7 +85,6 @@ class StudyUpUser(HttpUser):
         🔐 Se ejecuta cuando el usuario virtual "nace".
         Crea una cuenta nueva en Auth Emulator.
         """
-        # Generar credenciales únicas
         random_suffix = "".join(
             random.choices(string.ascii_lowercase + string.digits, k=8)
         )
@@ -75,13 +93,11 @@ class StudyUpUser(HttpUser):
 
         start_time = time.time()
         try:
-            # Crear usuario en Auth Emulator
             user_record = auth.create_user(
                 email=self.user_email, password=password, email_verified=True
             )
             self.user_id = user_record.uid
 
-            # Registrar métrica de éxito
             total_time = int((time.time() - start_time) * 1000)
             events.request.fire(
                 request_type="AUTH",
@@ -95,7 +111,6 @@ class StudyUpUser(HttpUser):
             print(f"✅ Usuario creado: {self.user_email} (UID: {self.user_id})")
 
         except Exception as e:
-            # Registrar métrica de fallo
             total_time = int((time.time() - start_time) * 1000)
             events.request.fire(
                 request_type="AUTH",
@@ -116,7 +131,12 @@ class StudyUpUser(HttpUser):
         if not self.user_id:
             return
 
-        # Generar datos de materia
+        # ⭐ Usar get_db() en lugar de db directamente
+        db_client = get_db()
+        if db_client is None:
+            print("⚠️ Error: Firestore client not initialized")
+            return
+
         materias_ejemplos = [
             "Matemáticas",
             "Física",
@@ -140,15 +160,10 @@ class StudyUpUser(HttpUser):
             "creado_en": datetime.now().isoformat(),
         }
 
-        if db is None:
-            print("⚠️ Error: Firestore client not initialized")
-            return
-
         start_time = time.time()
         try:
-            # Escribir en Firestore Emulator
             doc_ref = (
-                db.collection("users")
+                db_client.collection("users")
                 .document(self.user_id)
                 .collection("materias")
                 .add(materia_data)
@@ -156,7 +171,6 @@ class StudyUpUser(HttpUser):
             materia_id = doc_ref[1].id
             self.materias_ids.append(materia_id)
 
-            # Registrar métrica de éxito
             total_time = int((time.time() - start_time) * 1000)
             events.request.fire(
                 request_type="FIRESTORE",
@@ -185,15 +199,15 @@ class StudyUpUser(HttpUser):
         Peso: 2 (se ejecuta con menor frecuencia que crear materia).
         """
         if not self.user_id or not self.materias_ids:
-            # Si no hay materias, crear una primero
             self.crear_materia()
             return
 
-        if db is None:
+        # ⭐ Usar get_db() en lugar de db directamente
+        db_client = get_db()
+        if db_client is None:
             print("⚠️ Error: Firestore client not initialized")
             return
 
-        # Seleccionar una materia aleatoria
         materia_id = random.choice(self.materias_ids)
 
         calificacion_data = {
@@ -206,15 +220,9 @@ class StudyUpUser(HttpUser):
 
         start_time = time.time()
         try:
-            # Opción 1: Agregar a subcolección de calificaciones
-            db.collection("users").document(self.user_id).collection(
+            db_client.collection("users").document(self.user_id).collection(
                 "materias"
             ).document(materia_id).collection("calificaciones").add(calificacion_data)
-
-            # Opción 2 (comentada): Actualizar documento principal con campo de nota
-            # db.collection('users').document(self.user_id)\
-            #     .collection('materias').document(materia_id)\
-            #     .update({"nota_promedio": calificacion_data["nota"]})
 
             total_time = int((time.time() - start_time) * 1000)
             events.request.fire(
@@ -246,15 +254,18 @@ class StudyUpUser(HttpUser):
         if not self.user_id:
             return
 
-        if db is None:
+        # ⭐ Usar get_db() en lugar de db directamente
+        db_client = get_db()
+        if db_client is None:
             print("⚠️ Error: Firestore client not initialized")
             return
 
         start_time = time.time()
         try:
-            # Leer documentos de Firestore
             materias_ref = (
-                db.collection("users").document(self.user_id).collection("materias")
+                db_client.collection("users")
+                .document(self.user_id)
+                .collection("materias")
             )
             docs = materias_ref.stream()
 
@@ -265,7 +276,7 @@ class StudyUpUser(HttpUser):
                 request_type="FIRESTORE",
                 name="Listar Materias",
                 response_time=total_time,
-                response_length=count * 100,  # Estimación
+                response_length=count * 100,
                 exception=None,
                 context={},
             )
