@@ -22,7 +22,7 @@ Generar el código fuente completo y funcional para el caso de uso seleccionado 
 - Persistencia Local: SQLite/Drift e IndexedDB
 - Estado: Provider o Riverpod
 - Testing: flutter_test, mockito, integration_test
-<!-- - Performance: Locust.io para pruebas de carga -->
+- Performance: Locust.io para pruebas de carga
 
 ---
 
