@@ -1,10 +1,10 @@
-# 📚 StudyUp
+# StudyUp
 
 App móvil multiplataforma para que estudiantes universitarios organicen su semestre: **asignaturas, horario, calificaciones y progreso académico** en un solo lugar.
 
 Desarrollada con **Flutter** y **Firebase**, siguiendo una **arquitectura hexagonal** (dominio, aplicación, infraestructura y presentación).
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 | Módulo | Qué permite |
 |---|---|
@@ -14,7 +14,7 @@ Desarrollada con **Flutter** y **Firebase**, siguiendo una **arquitectura hexago
 | **Calificaciones** | Registrar notas por asignatura y **simular** qué nota se necesita para aprobar |
 | **Progreso** | Resumen del avance académico del semestre |
 
-## 🛠️ Tecnologías
+## Tecnologías
 
 - **Flutter / Dart** (Android, iOS, web y escritorio)
 - **Firebase**: Authentication, Cloud Firestore
@@ -23,7 +23,7 @@ Desarrollada con **Flutter** y **Firebase**, siguiendo una **arquitectura hexago
 - Pruebas: `flutter_test`, `mockito`, `mocktail`, `fake_cloud_firestore`
 - Pruebas de rendimiento con **Locust** (`locustfile.py`)
 
-## 🧱 Arquitectura
+## Arquitectura
 
 ```
 lib/
@@ -36,7 +36,7 @@ test/                 Pruebas de entidades, repositorios y datasources
 
 Patrones aplicados: **Repository**, **Observer** (providers reactivos) y **Factory Method**.
 
-## 🚀 Cómo ejecutarlo
+## Cómo ejecutarlo
 
 Requisitos: Flutter 3.16 o superior y un proyecto de Firebase propio.
 
@@ -54,6 +54,6 @@ Para correr las pruebas:
 flutter test
 ```
 
-## 👥 Contexto
+## Contexto
 
 Proyecto desarrollado en equipo para un curso de Ingeniería de Software (2025).
